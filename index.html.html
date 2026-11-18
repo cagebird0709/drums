@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1016">
+<title>爵士鼓聽音動態譜提詞機</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1016;--panel:#151e29;--panel2:#1e2a38;--line:#344456;--txt:#f5f7fa;--muted:#aab8c7;--mint:#55e0c4;--red:#ff4f59;--gold:#ffd166;--blue:#4ca5ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--txt);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit}button{min-height:58px;border:0;border-radius:15px;padding:13px 18px;background:#304154;color:white;font-weight:800;touch-action:manipulation}
+button.primary{background:#087e72}button.gold{background:#8a6417}button.red{background:#853c46}button:disabled{opacity:.45}
+input,textarea{width:100%;background:#0d151e;color:var(--txt);border:1px solid var(--line);border-radius:12px;padding:13px;min-height:52px}
+textarea{min-height:105px;resize:vertical}label{display:block;color:var(--muted);font-size:14px;margin:12px 0 6px}
+.app{max-width:1250px;margin:auto;padding:14px 14px calc(32px + env(safe-area-inset-bottom))}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+h1{font-size:clamp(23px,4vw,34px);margin:3px 0}h2{font-size:20px;margin:0 0 12px}.muted,.small{color:var(--muted)}.small{font-size:13px}
+.kicker{font-size:12px;letter-spacing:.13em;color:var(--mint);font-weight:900}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:19px;padding:16px;margin:12px 0}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap}.toolbar>*{flex:1 1 150px}
+.grid{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+.song-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
+.song-card{background:linear-gradient(145deg,#1b2938,#121a24);border:1px solid #35495d;border-radius:18px;padding:18px;min-height:155px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.song-card h3{font-size:22px;margin:0;overflow-wrap:anywhere}.song-card button{width:100%}
+.hero{display:grid;grid-template-columns:1fr auto;align-items:center;gap:14px}
+.detect{font-size:clamp(21px,3.5vw,30px);min-height:82px;padding:18px 25px;background:#087e72}
+.detect.listening{background:#a13b45;box-shadow:0 0 0 3px #ff697355}
+.time{font-size:clamp(40px,8vw,72px);font-weight:950;letter-spacing:.02em;font-variant-numeric:tabular-nums;line-height:1.1}
+.status{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:14px;margin-top:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:#718092}.dot.live{background:var(--mint);box-shadow:0 0 12px var(--mint)}
+.score{height:min(58vh,650px);min-height:300px;position:relative;overflow:hidden;background:#070a0e;border:1px solid #364352;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.score img{max-width:100%;max-height:100%;object-fit:contain}.score .empty{color:#748396;text-align:center;padding:25px}
+.playhead{position:absolute;left:0;top:0;bottom:0;width:5px;background:#ff424dc2;box-shadow:0 0 16px #ff394c;pointer-events:none}
+.cue{font-size:clamp(25px,4.8vw,43px);font-weight:900;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:14px;color:#fff}
+.score-title{font-size:clamp(23px,4vw,34px);font-weight:900;margin:12px 0 0}
+.segment{background:#111a24;border:1px solid #344456;border-radius:14px;padding:13px;margin:9px 0}
+.seg-head{display:flex;justify-content:space-between;gap:8px;align-items:center}.seg-head strong{font-size:17px}.segment img{max-width:130px;max-height:65px;object-fit:contain;margin-top:8px}
+.segment button{min-height:43px;padding:9px 12px;font-size:14px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#preview{display:none;position:fixed;z-index:30;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);width:min(94vw,620px);background:#1b2735f5;border:2px solid var(--gold);border-radius:17px;padding:12px;box-shadow:0 8px 40px #000c}
+.preview-inner{display:flex;align-items:center;gap:13px}#previewImg{width:105px;height:68px;object-fit:contain;background:#080b10;border-radius:8px}
+.count{font-size:34px;font-weight:950;color:var(--gold);font-variant-numeric:tabular-nums}
+.hidden{display:none!important}.notice{padding:12px;border-radius:12px;background:#302b1d;color:#ffe09a;border:1px solid #66582e;font-size:13px}
+.progress{height:6px;background:#263343;border-radius:99px;overflow:hidden;margin-top:10px}.progress>i{display:block;height:100%;width:0;background:var(--mint)}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.score{height:46vh;min-height:250px}.app{padding:10px}.panel{padding:13px}.hero{grid-template-columns:1fr}.hero .time{text-align:left}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <div><div class="kicker">DRUM LISTENING PROMPTER</div><h1>🥁 爵士鼓聽音動態譜</h1><div class="small">只聽外部音樂 · 不播放音樂</div></div>
+ <button id="homeBtn" class="hidden">⌂ 歌曲庫</button>
+</header>
+
+<section id="homeView">
+ <section class="panel">
+  <div class="toolbar" style="align-items:center"><div style="flex:2"><h2 style="margin:0">我的練鼓歌曲</h2><div class="small">歌曲、聲紋與譜面都保存在這台 iPad 的 Safari</div></div><button id="addBtn" class="primary">＋ 新增歌曲</button></div>
+ </section>
+ <div id="songList" class="song-grid"><div class="panel muted">正在讀取歌曲庫…</div></div>
+ <section class="panel"><div class="notice">第一次建立歌曲時，會在 iPad 本機分析音檔並建立聲紋庫。分析時間依歌曲長度及 iPad 效能而異。完成後練習時不需要播放網頁內的音樂。</div></section>
+</section>
+
+<section id="createView" class="hidden">
+ <section class="panel">
+  <h2>新增練習歌曲</h2>
+  <label>歌名</label><input id="newName" placeholder="例如：練習曲 01">
+  <label>匯入該首歌的 MP3 / M4A（只用來建立聲紋，不會播放）</label><input id="newAudio" type="file" accept=".mp3,.m4a,audio/mpeg,audio/mp4">
+  <div class="small" style="margin-top:7px">建議使用完整、未剪輯的音檔。聲紋分析完成後，音檔本身不必留在歌曲資料中。</div>
+  <div class="toolbar" style="margin-top:15px"><button id="cancelCreate">取消</button><button id="createSong" class="primary">建立歌曲並分析聲紋</button></div>
+  <div id="analysisStatus" class="small" style="margin-top:12px"></div><div class="progress"><i id="analysisProgress"></i></div>
+ </section>
+</section>
+
+<section id="detailView" class="hidden">
+ <div class="toolbar" style="margin:5px 0 12px"><button id="backToLibrary">← 歌曲庫</button><button id="editSongName">✎ 修改歌名</button><button id="deleteSong" class="red">刪除歌曲</button></div>
+ <section class="panel">
+  <div class="hero">
+   <div><div class="kicker">MICROPHONE TRACKING</div><div class="time" id="detectedTime">00:00</div><div class="status"><span class="dot" id="micDot"></span><span id="micStatus">尚未開始聽音偵測</span></div></div>
+   <button id="listenBtn" class="detect">🎙️ 開始聽音偵測</button>
+  </div>
+  <div class="small" id="matchInfo" style="margin-top:10px">聲紋庫已就緒後，請讓 iPad 麥克風聽到外部音響播放的音樂。</div>
+ </section>
+ <div class="grid">
+  <main>
+   <section class="panel">
+    <div class="small" id="activeRange">目前段落：尚未定位</div>
+    <div class="score" id="scoreStage"><div class="empty" id="scoreEmpty">🎼<br>偵測到音樂後，對應鼓譜會顯示在這裡</div><img id="scoreImg" class="hidden" alt="目前段落鼓譜"><div id="playhead" class="playhead hidden"></div></div>
+    <div id="activeTitle" class="score-title">等待聲紋定位</div><div id="activeCue" class="cue"></div>
+    <div class="small" style="margin-top:12px">紅色光條依目前段落進度平滑移動</div>
+   </section>
+  </main>
+  <aside>
+   <section class="panel">
+    <h2>段落設定</h2>
+    <div class="small">所有時間皆使用分：秒，例如 01:20</div>
+    <label>段落名稱</label><input id="segName" placeholder="前奏、主歌、副歌、過門…">
+    <div class="row"><div><label>開始時間（分:秒）</label><input id="segStart" placeholder="00:00" inputmode="numeric"></div><div><label>結束時間（分:秒）</label><input id="segEnd" placeholder="00:30" inputmode="numeric"></div></div>
+    <label>手寫鼓譜照片</label><input id="segPhoto" type="file" accept="image/*">
+    <label>文字節奏提示</label><textarea id="segCue" placeholder="例如：過門口訣、1e&a 2e&a…"></textarea>
+    <div class="toolbar" style="margin-top:12px"><button id="clearSegForm">清空</button><button id="saveSegment" class="primary">儲存段落</button></div>
+    <div id="segFormStatus" class="small" style="margin-top:8px"></div>
+   </section>
+   <section class="panel">
+    <h2>⚡ 時間點插入／取代</h2>
+    <div class="small">指定一段時間，取代該時段原有內容；被切開的前後段會自動保留。</div>
+    <div class="row"><div><label>從（分:秒）</label><input id="insStart" placeholder="01:20" inputmode="numeric"></div><div><label>到（分:秒）</label><input id="insEnd" placeholder="01:25" inputmode="numeric"></div></div>
+    <label>新片段名稱</label><input id="insName" placeholder="例如：副歌過門">
+    <label>新片段鼓譜照片</label><input id="insPhoto" type="file" accept="image/*">
+    <label>新片段文字提示</label><textarea id="insCue" placeholder="可只放圖片、只放文字，或兩者都有"></textarea>
+    <button id="insertReplace" class="gold" style="width:100%;margin-top:12px">⚡ 插入並取代指定時段</button>
+    <div id="insertStatus" class="small" style="margin-top:8px"></div>
+   </section>
+   <section class="panel">
+    <h2>歌曲段落時間軸</h2><div id="segmentList"></div>
+   </section>
+   <section class="panel">
+    <h2>聽音定位狀態</h2>
+    <div class="notice">麥克風會先經過高通濾波，降低低頻大鼓干擾。每 2 秒分析一次，成功定位後以內部時鐘推進；若音樂倒帶並持續吻合前段聲紋，會切回新的位置。</div>
+   </section>
+  </aside>
+ </div>
+</section>
+</div>
+<div id="preview"><div class="preview-inner"><img id="previewImg" alt="下一段鼓譜縮圖"><div style="flex:1"><div class="small">NEXT SECTION｜下一段預告</div><strong id="previewName">下一段</strong></div><div class="count" id="previewCount">3</div></div></div>
+
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),DB='drum-listen-prompter-v1',STORE='songs';
+let db,songs=[],song=null,editingId=null,formImage=null,insertImage=null;
+let audioCtx=null,micStream=null,sourceNode=null,filterNode=null,processor=null;
+let listening=false,buffer=[],sampleTimer=null,clockTimer=null,lastMatch=null,lastMatchAt=0,rewindCandidate=null,rewindSince=0;
+let currentTime=0,displayTime=0,lastTick=0,raf=0,matchBusy=false,confidence=0;
+const clone=x=>JSON.parse(JSON.stringify(x));
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open(DB,1);r.onupgradeneeded=()=>r.result.createObjectStore(STORE,{keyPath:'id'});r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function allSongs(){return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+function putSong(){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(song);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+function deleteSongDB(id){return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(id);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+function show(view){['homeView','createView','detailView'].forEach(id=>$(id).classList.toggle('hidden',id!==view));$('homeBtn').classList.toggle('hidden',view==='homeView');$('preview').style.display='none';}
+function mmss(sec){sec=Math.max(0,Math.floor(sec));return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');}
+function parseTime(v){const m=String(v).trim().match(/^(\d{1,3}):([0-5]?\d)$/);if(!m)return null;return Number(m[1])*60+Number(m[2]);}
+function escapeHTML(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function renderHome(){$('songList').innerHTML=songs.length?songs.sort((a,b)=>b.updated-a.updated).map(s=>`<article class="song-card"><div><div class="kicker">MY DRUM BOOK</div><h3>${escapeHTML(s.name)}</h3><div class="small">${s.segments.length} 個段落　·　${s.duration?mmss(s.duration):'聲紋已建立'}</div></div><button data-open="${s.id}" class="primary">開啟歌曲 →</button></article>`).join(''):'<div class="panel muted">歌曲庫還是空的，新增第一首練習曲吧！</div>';}
+async function refreshSongs(){songs=await allSongs();renderHome();}
+$('addBtn').onclick=()=>{show('createView');$('newName').value='';$('newAudio').value='';$('analysisStatus').textContent='';$('analysisProgress').style.width='0%';};
+$('cancelCreate').onclick=()=>show('homeView');$('homeBtn').onclick=()=>{stopListening();show('homeView');refreshSongs();};$('backToLibrary').onclick=()=>{stopListening();show('homeView');refreshSongs();};
+$('songList').onclick=e=>{const b=e.target.closest('[data-open]');if(b)openSong(b.dataset.open);};
+
+// Fast radix-2 FFT and compact log-frequency band-energy fingerprint.
+function fftPower(input){const n=input.length,re=new Float32Array(input),im=new Float32Array(n);let j=0;for(let i=1;i<n;i++){let bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j){let t=re[i];re[i]=re[j];re[j]=t;}}for(let len=2;len<=n;len<<=1){const a=-2*Math.PI/len,wr0=Math.cos(a),wi0=Math.sin(a);for(let i=0;i<n;i+=len){let wr=1,wi=0;for(let k=0;k<len/2;k++){const ur=re[i+k],ui=im[i+k],vr=re[i+k+len/2]*wr-im[i+k+len/2]*wi,vi=re[i+k+len/2]*wi+im[i+k+len/2]*wr;re[i+k]=ur+vr;im[i+k]=ui+vi;re[i+k+len/2]=ur-vr;im[i+k+len/2]=ui-vi;const nr=wr*wr0-wi*wi0;wi=wr*wi0+wi*wr0;wr=nr;}}}const p=new Float32Array(n/2);for(let k=1;k<n/2;k++)p[k]=re[k]*re[k]+im[k]*im[k];return p;}
+function feature(samples,sr){const n=1024,stride=Math.max(1,Math.floor(sr/11025)),bands=24,acc=new Float32Array(bands);let frames=0;for(let off=0;off+n*stride<samples.length;off+=Math.max(1024,Math.floor(sr*.10))){const x=new Float32Array(n);for(let i=0;i<n;i++)x[i]=samples[off+i*stride]*(.5-.5*Math.cos(2*Math.PI*i/(n-1)));const p=fftPower(x);for(let b=0;b<bands;b++){const lo=Math.max(1,Math.floor(Math.pow(2,b/bands)*n/4)),hi=Math.max(lo+1,Math.floor(Math.pow(2,(b+1)/bands)*n/4));let sum=0;for(let k=lo;k<Math.min(hi,n/2);k++)sum+=p[k];acc[b]+=Math.log1p(sum);}frames++;}if(frames)for(let i=0;i<bands;i++)acc[i]/=frames;const mean=acc.reduce((a,b)=>a+b,0)/bands,norm=Math.sqrt(acc.reduce((a,b)=>a+(b-mean)**2,0))||1;return Array.from(acc,x=>(x-mean)/norm);}
+function cosine(a,b){let v=0;for(let i=0;i<a.length;i++)v+=a[i]*b[i];return v;}
+async function buildFingerprints(file){const ctx=new(window.AudioContext||window.webkitAudioContext)();try{const ab=await file.arrayBuffer(),audio=await ctx.decodeAudioData(ab.slice(0)),rate=audio.sampleRate,ch=audio.numberOfChannels,len=audio.length;let mono=new Float32Array(len);for(let c=0;c<ch;c++){const d=audio.getChannelData(c);for(let i=0;i<len;i++)mono[i]+=d[i]/ch;}const count=Math.ceil(audio.duration),fps=[];for(let sec=0;sec<count;sec++){const a=Math.floor(sec*rate),b=Math.min(len,Math.floor((sec+1)*rate));fps.push(feature(mono.subarray(a,b),rate));const pct=Math.round((sec+1)/count*100);$('analysisProgress').style.width=pct+'%';$('analysisStatus').textContent=`正在分析聲紋：${sec+1} / ${count} 秒（${pct}%）`;if(sec%4===0)await new Promise(r=>setTimeout(r,0));}return {fps,duration:audio.duration};}finally{await ctx.close();}}
+$('createSong').onclick=async()=>{const name=$('newName').value.trim(),file=$('newAudio').files[0];if(!name)return alert('請輸入歌名。');if(!file)return alert('請匯入 MP3 或 M4A 音檔。');if(!/\.(mp3|m4a)$/i.test(file.name)&&!file.type.startsWith('audio/'))return alert('請選擇 MP3 或 M4A 音檔。');$('createSong').disabled=true;try{$('analysisStatus').textContent='正在解碼音檔…';const result=await buildFingerprints(file);const fresh={id:crypto.randomUUID(),name,duration:result.duration,fingerprints:result.fps,segments:[],updated:Date.now(),version:1};song=fresh;await putSong();await refreshSongs();openSong(fresh.id);}catch(e){console.error(e);alert('聲紋分析失敗：'+(e.message||e)+'。請確認音檔格式及 Safari 可用記憶體。');}finally{$('createSong').disabled=false;}};
+
+function openSong(id){song=songs.find(s=>s.id===id);if(!song)return;stopListening();currentTime=0;displayTime=0;editingId=null;formImage=null;insertImage=null;clearForm();renderSegments();show('detailView');$('detectedTime').textContent='00:00';$('activeTitle').textContent='等待聲紋定位';$('activeCue').textContent='';$('scoreImg').classList.add('hidden');$('scoreEmpty').classList.remove('hidden');$('playhead').classList.add('hidden');$('matchInfo').textContent=`聲紋庫：${song.fingerprints.length} 秒｜歌曲長度 ${mmss(song.duration)}`;}
+$('editSongName').onclick=async()=>{const n=prompt('修改歌名',song.name);if(n&&n.trim()){song.name=n.trim();song.updated=Date.now();await putSong();await refreshSongs();}};
+$('deleteSong').onclick=async()=>{if(!confirm(`確定刪除「${song.name}」及其所有聲紋、段落和譜圖？`))return;stopListening();await deleteSongDB(song.id);song=null;await refreshSongs();show('homeView');};
+
+function clearForm(){editingId=null;formImage=null;$('segName').value='';$('segStart').value='';$('segEnd').value='';$('segCue').value='';$('segPhoto').value='';$('segFormStatus').textContent='';}
+$('clearSegForm').onclick=clearForm;
+$('segPhoto').onchange=e=>{const f=e.target.files[0];if(!f)return;readImage(f).then(v=>formImage=v).catch(()=>alert('圖片讀取失敗。'));};
+function readImage(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
+$('saveSegment').onclick=async()=>{const name=$('segName').value.trim(),a=parseTime($('segStart').value),b=parseTime($('segEnd').value),cue=$('segCue').value.trim();if(!name)return alert('請輸入段落名稱。');if(a===null||b===null||b<=a)return alert('時間請使用分:秒格式，且結束時間要大於開始時間。');if(b>song.duration+1)return alert('段落結束時間超過歌曲長度。');const old=editingId?song.segments.find(x=>x.id===editingId):null,img=formImage||(old&&old.image)||'';if(!img&&!cue)return alert('請至少提供鼓譜照片或文字節奏提示。');const seg={id:editingId||crypto.randomUUID(),name,start:a,end:b,image:img,cue};if(editingId)song.segments=song.segments.map(x=>x.id===editingId?seg:x);else song.segments.push(seg);song.segments.sort((x,y)=>x.start-y.start);song.updated=Date.now();await putSong();clearForm();renderSegments();$('segFormStatus').textContent='段落已儲存。';};
+function renderSegments(){const list=$('segmentList');if(!song.segments.length){list.innerHTML='<div class="small muted">尚未建立段落。</div>';return;}list.innerHTML=song.segments.map((s,i)=>`<div class="segment"><div class="seg-head"><strong>${i+1}. ${escapeHTML(s.name)}</strong><span class="small">${mmss(s.start)}–${mmss(s.end)}</span></div>${s.cue?`<div class="small" style="margin-top:5px">${escapeHTML(s.cue)}</div>`:''}${s.image?`<img src="${s.image}" alt="">`:''}<div class="toolbar" style="margin-top:9px"><button data-edit="${s.id}">編輯</button><button data-remove="${s.id}" class="red">刪除</button></div></div>`).join('');}
+$('segmentList').onclick=e=>{const edit=e.target.closest('[data-edit]'),del=e.target.closest('[data-remove]');if(edit){const s=song.segments.find(x=>x.id===edit.dataset.edit);editingId=s.id;formImage=s.image||null;$('segName').value=s.name;$('segStart').value=mmss(s.start);$('segEnd').value=mmss(s.end);$('segCue').value=s.cue||'';$('segPhoto').value='';$('segFormStatus').textContent='正在編輯段落；重新選擇圖片即可更換。';window.scrollTo({top:$('segName').getBoundingClientRect().top+scrollY-20,behavior:'smooth'});}if(del){if(!confirm('刪除此段落？'))return;song.segments=song.segments.filter(x=>x.id!==del.dataset.remove);putSong().then(renderSegments);}};
+$('insertReplace').onclick=async()=>{const a=parseTime($('insStart').value),b=parseTime($('insEnd').value),name=$('insName').value.trim(),cue=$('insCue').value.trim();if(a===null||b===null||b<=a)return alert('請以分:秒輸入有效的起訖時間。');if(b>song.duration+1)return alert('指定時間超過歌曲長度。');if(!name)return alert('請輸入新片段名稱。');if(!insertImage&&!cue)return alert('請提供新片段照片或文字提示。');const replacement={id:crypto.randomUUID(),name,start:a,end:b,image:insertImage||'',cue};const next=[];for(const s of song.segments){if(s.end<=a||s.start>=b){next.push(s);continue;}if(s.start<a)next.push({...s,id:crypto.randomUUID(),end:a});if(s.end>b)next.push({...s,id:crypto.randomUUID(),start:b});}next.push(replacement);song.segments=next.sort((x,y)=>x.start-y.start);song.updated=Date.now();await putSong();renderSegments();$('insertStatus').textContent=`已取代 ${mmss(a)}–${mmss(b)}，原片段重疊部分已切開保留。`;$('insName').value='';$('insStart').value='';$('insEnd').value='';$('insCue').value='';$('insPhoto').value='';insertImage=null;};
+$('insPhoto').onchange=e=>{const f=e.target.files[0];if(f)readImage(f).then(v=>insertImage=v);};
+
+// Microphone: high-pass filter + two-second rolling capture.
+async function startListening(){if(!navigator.mediaDevices?.getUserMedia)return alert('此 Safari 不支援麥克風，請使用 HTTPS 並確認權限。');if(!song.fingerprints?.length)return alert('這首歌沒有可用的聲紋庫。');try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();await audioCtx.resume();micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}});sourceNode=audioCtx.createMediaStreamSource(micStream);filterNode=audioCtx.createBiquadFilter();filterNode.type='highpass';filterNode.frequency.value=180;filterNode.Q.value=.707;processor=audioCtx.createScriptProcessor(4096,1,1);buffer=[];processor.onaudioprocess=e=>{if(!listening)return;const data=e.inputBuffer.getChannelData(0);buffer.push(new Float32Array(data));const maxSamples=audioCtx.sampleRate*2.25;let total=buffer.reduce((n,x)=>n+x.length,0);while(total>maxSamples&&buffer.length>1){total-=buffer.shift().length;}};sourceNode.connect(filterNode);filterNode.connect(processor);processor.connect(audioCtx.destination);listening=true;$('listenBtn').textContent='Ⅱ 暫停聽音偵測';$('listenBtn').classList.add('listening');$('micDot').classList.add('live');$('micStatus').textContent='正在聽取外部音樂…';lastTick=performance.now();raf=requestAnimationFrame(animate);sampleTimer=setInterval(analyseMic,2000);$('matchInfo').textContent='麥克風已啟動；每 2 秒比對一次聲紋。請讓 iPad 聽清楚外部音響。';}catch(e){console.error(e);stopListening();alert('無法啟動麥克風：'+(e.message||e)+'。請確認 HTTPS 與 Safari 麥克風權限。');}}
+function stopListening(){listening=false;clearInterval(sampleTimer);cancelAnimationFrame(raf);if(processor){processor.onaudioprocess=null;try{processor.disconnect();}catch{}}try{sourceNode?.disconnect();filterNode?.disconnect();}catch{}if(micStream)micStream.getTracks().forEach(t=>t.stop());if(audioCtx){audioCtx.close().catch(()=>{});}audioCtx=null;micStream=null;sourceNode=null;filterNode=null;processor=null;buffer=[];$('listenBtn').textContent='🎙️ 開始聽音偵測';$('listenBtn').classList.remove('listening');$('micDot').classList.remove('live');$('micStatus').textContent='聽音偵測已暫停';}
+$('listenBtn').onclick=()=>listening?stopListening():startListening();
+function animate(now){if(!listening)return;const dt=Math.min(.1,(now-lastTick)/1000);lastTick=now;if(lastMatch!==null){currentTime=Math.min(song.duration,lastMatch+(performance.now()-lastMatchAt)/1000);displayTime+=(currentTime-displayTime)*Math.min(1,dt*8);renderScore(displayTime);}raf=requestAnimationFrame(animate);}
+function micSamples(){const total=buffer.reduce((n,x)=>n+x.length,0);if(total<audioCtx.sampleRate*1.7)return null;const out=new Float32Array(total);let p=0;buffer.forEach(x=>{out.set(x,p);p+=x.length;});return out;}
+function getMicFrames(samples,sr){const sec=1,frames=[];for(let i=0;i<2;i++){const a=Math.floor(i*sec*sr),b=Math.min(samples.length,Math.floor((i+1)*sec*sr));if(b-a<sr*.65)return null;frames.push(feature(samples.subarray(a,b),sr));}return frames;}
+async function analyseMic(){if(!listening||matchBusy)return;const samples=micSamples();if(!samples)return;matchBusy=true;try{const frames=getMicFrames(samples,audioCtx.sampleRate);if(!frames)return;const fps=song.fingerprints,n=fps.length;let predicted=lastMatch===null?null:currentTime+2;let best={score:-2,time:0};const evaluate=(lo,hi)=>{for(let t=Math.max(0,lo);t<Math.min(n-1,hi);t++){const score=(cosine(frames[0],fps[t])+cosine(frames[1],fps[t+1]))/2;if(score>best.score)best={score,time:t};}};
+ if(predicted===null)evaluate(0,n-1);else{evaluate(predicted-7,predicted+9);if(best.score<.58)evaluate(0,n-1);}
+ confidence=best.score;
+ const threshold=.48;
+ if(best.score>=threshold){
+  const expected=predicted===null?best.time:predicted;
+  const jumpBack=predicted!==null&&best.time<expected-5;
+  if(jumpBack){if(rewindCandidate!==null&&Math.abs(rewindCandidate-best.time)<=3){if(performance.now()-rewindSince>=1700){lockMatch(best.time,best.score,true);rewindCandidate=null;}}else{rewindCandidate=best.time;rewindSince=performance.now();$('micStatus').textContent='偵測到可能倒帶，確認中…';}}
+  else{rewindCandidate=null;lockMatch(best.time,best.score,false);}
+ }else{$('micStatus').textContent='正在聽音：訊號不足，持續比對…';}
+ $('matchInfo').textContent=`最近比對相似度：${Math.max(0,best.score).toFixed(2)}｜每 2 秒更新；環境噪音可能影響結果。`;
+ }catch(e){console.error(e);$('micStatus').textContent='音訊分析遇到問題，仍在嘗試…';}finally{matchBusy=false;}}
+function lockMatch(t,score,isRewind){lastMatch=t;lastMatchAt=performance.now();currentTime=t;displayTime=t;$('detectedTime').textContent=mmss(t);$('micStatus').textContent=isRewind?'已偵測倒帶，跳回重練位置':'已定位音樂進度';$('matchInfo').textContent=`定位 ${mmss(t)}｜相似度 ${score.toFixed(2)}`;renderScore(t);}
+function activeIndex(t){return song.segments.findIndex(s=>t>=s.start&&t<s.end);}
+function renderScore(t){$('detectedTime').textContent=mmss(t);const idx=activeIndex(t),s=song.segments[idx];if(!s){$('activeRange').textContent='目前段落：尚未設定此時間的譜面';$('activeTitle').textContent='尚無對應段落';$('activeCue').textContent='';$('scoreImg').classList.add('hidden');$('scoreEmpty').classList.remove('hidden');$('playhead').classList.add('hidden');$('preview').style.display='none';return;}
+ $('activeRange').textContent=`目前段落：${mmss(s.start)} – ${mmss(s.end)}`;$('activeTitle').textContent=s.name;$('activeCue').textContent=s.cue||'';if(s.image){$('scoreImg').src=s.image;$('scoreImg').classList.remove('hidden');$('scoreEmpty').classList.add('hidden');}else{$('scoreImg').classList.add('hidden');$('scoreEmpty').classList.remove('hidden');$('scoreEmpty').textContent='此段落使用文字節奏提示';}
+ $('playhead').classList.remove('hidden');$('playhead').style.left=(Math.max(0,Math.min(1,(t-s.start)/(s.end-s.start)))*100)+'%';
+ const next=song.segments.filter(x=>x.start>=s.end).sort((a,b)=>a.start-b.start)[0],remaining=s.end-t;if(next&&remaining<=3&&remaining>=0){$('preview').style.display='block';$('previewName').textContent=next.name;$('previewCount').textContent=Math.ceil(remaining);if(next.image){$('previewImg').src=next.image;$('previewImg').style.display='block';}else $('previewImg').style.display='none';}else $('preview').style.display='none';
+}
+(async()=>{try{db=await openDB();await refreshSongs();show('homeView');}catch(e){console.error(e);$('songList').innerHTML='<div class="panel">無法開啟 IndexedDB。請確認 Safari 未使用私密瀏覽，並允許網站儲存資料。</div>';}})();
+})();
+</script>
+</body>
+</html>
